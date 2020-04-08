@@ -140,19 +140,82 @@ using (SqlConnection conn = Connection)
         // POST: Students/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(int id, Student student) 
         {
-            try
+                try
             {
-                // TODO: Add update logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
 
-                return RedirectToAction(nameof(Index));
+                    using (SqlCommand cmd = conn.CreateCommand())
+
+                    {
+
+                        cmd.CommandText = @"UPDATE Student
+                                            SET FirstName = @firstName, LastName = @lastName, SlackHandle = @slackHandle, CohortId = @cohortId
+                                            WHERE Id = @id";
+
+                        cmd.Parameters.Add(new SqlParameter("@firstName", student.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", student.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slackHandle", student.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@cohortId", student.CohortId));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+
+                        {
+                            return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        }
+                        throw new Exception("No rows affected");
+                    }
+                }
             }
-            catch
+
+            catch (Exception)
+
             {
-                return View();
+                if (!StudentExists(id))
+
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            bool StudentExists(int id)
+
+        {
+
+            using (SqlConnection conn = Connection)
+
+            {
+
+                conn.Open();
+
+                using (SqlCommand cmd = conn.CreateCommand())
+
+                {
+
+                    cmd.CommandText = @"Select Id, FirstName, LastName, SlackHandle, CohortId
+                                        FROM Student
+                                        Where Id = @id";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    return reader.Read();
+
+                } 
             }
         }
+    }
 
         // GET: Students/Delete/5
         public ActionResult Delete(int id)
@@ -177,4 +240,8 @@ using (SqlConnection conn = Connection)
             }
         }
     }
-}
+} 
+
+
+
+            
